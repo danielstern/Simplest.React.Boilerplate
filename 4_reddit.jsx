@@ -5,58 +5,63 @@ var NavigationItem = React.createClass({
 	render:function(){
 		return (
 			<li onClick={this._onClick} className={this.props.selected ? "selected" : ""}>
-				{this.props.items.data.display_name}
+				{this.props.item.data.display_name} {this.props.selected ? "!!" : ""}
 			</li>
 		)
 	}
 });
 
 var Navigation = React.createClass({
-	_setSelectedItem:function(item){
-		this.props.selectItem(item);
+	setSelectedItem:function(item){
+		this.props.selectSelectedNavItem(item);
 	},
 	render:function(){
 		var _this = this;
 
-		return <div>HIYO!</div>
+		var items = this.props.items.map(function(item){
+			return (
+				<NavigationItem key={item.data.id}
+					item={item} 
+					selectItem={_this.setSelectedItem}
+					selected={item.data.url === _this.props.activeUrl} />
+			)			
+		});
 
-		// var items = this.props.items.map(function(item){
-		// 	return (
-		// 		<NavigationItem key={item.data.id}
-		// 			item={item} selectedItem={_this._setSelectedItem}
-		// 			selected={item.data.url === _this.props.activeUrl} />
-		// 	)
-			
-		// });
+		return (
+			<div className="navigation">
+				<div className="header">Navigation</div>
+				<ul>
+					{items}
+				</ul>
+			</div>
+		)
 	}
 });
 
-function JSONP(url,cb){
-	var cbname = "fn" + Date.now();
-	var script = document.createElement("script")
-	script.src = url + cbname;
-
-	window[cbname] = function(json){
-		cb(json);
-		delete window[cbname];
-	}
-
-	document.head.appendChild(script);
-}
-
 var RedditApp = React.createClass({
+	makeJSONPRequest:function(url,cb){
+		var cbname = "fn" + Date.now();
+		var script = document.createElement("script")
+		script.src = url + cbname;
+
+		window[cbname] = function(json){
+			cb(json);
+			delete window[cbname];
+		}
+
+		document.head.appendChild(script);
+	},
 	componentDidMount: function(){
 		var _this = this;
-		JSONP("http://www.reddit.com/reddits.json?jsonp=",function(json){
+		this.makeJSONPRequest("http://www.reddit.com/reddits.json?jsonp=",function(json){
 			_this.setState({
 				navigationItems:json.data.children
 			});
-			console.log("Got data...",json);
-		})
+		});
 	},
 	getInitialState:function(){
 		return ({
-			activeUrl: "",
+			activeNavigationUrl: "",
 			navigationItems: [],
 			storyItems: [],
 			title: "SELECT A SUBREDDIT!"
@@ -66,11 +71,23 @@ var RedditApp = React.createClass({
 		return (
 			<div>
 				<h1>OUR REDDIT APP!</h1>
-				<Navigation/>
+				<Navigation activeUrl={this.state.activeNavigationUrl}
+				items={this.state.navigationItems}
+				selectSelectedNavItem={this.selectSelectedNavItem} />
 			</div>
 		)
 	},
-	setSelectedItem:function(item){
+	selectSelectedNavItem:function(item){
+		console.log("settingselected nav...",item);
+		var _this = this;
+		this.makeJSONPRequest("http://www.reddit.com/" + item.data.url + ".json?sort=top&t=month&jsonp=",function(json){
+			_this.setState({storyItems:json.data.children})
+		});
+
+		this.setState({
+			activeNavigationUrl: item.data.url,
+			title: item.data.display_name
+		})
 
 	}
 })
