@@ -38,6 +38,24 @@ var Navigation = React.createClass({
 	}
 });
 
+var StoryList = React.createClass({
+	render:function(){
+		var nodes = this.props.items.slice(0,3).map(function(item){
+			return (
+				<div>
+				<a key={item.data.url} href={item.data.url}>
+					({item.data.score}) - {item.data.title}
+				</a>
+				</div>
+			)
+		})
+
+		return (
+			<div>{nodes}</div>
+		)
+	}
+})
+
 var RedditApp = React.createClass({
 	makeJSONPRequest:function(url,cb){
 		var cbname = "fn" + Date.now();
@@ -70,15 +88,18 @@ var RedditApp = React.createClass({
 	render:function(){
 		return (
 			<div>
-				<h1>OUR REDDIT APP!</h1>
-				<Navigation activeUrl={this.state.activeNavigationUrl}
-				items={this.state.navigationItems}
-				selectSelectedNavItem={this.selectSelectedNavItem} />
+				<h2>React Reddit App</h2>
+				<h3>{this.state.title}</h3>
+				<Navigation 
+					activeUrl={this.state.activeNavigationUrl}
+					items={this.state.navigationItems}
+					selectSelectedNavItem={this.selectSelectedNavItem} />
+
+				<StoryList items={this.state.storyItems} />
 			</div>
 		)
 	},
 	selectSelectedNavItem:function(item){
-		console.log("settingselected nav...",item);
 		var _this = this;
 		this.makeJSONPRequest("http://www.reddit.com/" + item.data.url + ".json?sort=top&t=month&jsonp=",function(json){
 			_this.setState({storyItems:json.data.children})
